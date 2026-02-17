@@ -8,14 +8,14 @@ interface WordCardProps {
   onPrev: () => void;
   hasPrev: boolean;
   hasNext: boolean;
+  onPlayVideo?: (videoId: string) => void;
 }
 
-export function WordCard({ word, onNext, onPrev, hasPrev, hasNext }: WordCardProps) {
+export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, onPlayVideo }: WordCardProps) {
   const { speak } = useSpeechSynthesis();
   const touchStartX = useRef(0);
   const [animKey, setAnimKey] = useState(0);
 
-  // Swipe detection
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
@@ -40,29 +40,30 @@ export function WordCard({ word, onNext, onPrev, hasPrev, hasNext }: WordCardPro
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Emoji — tap to hear */}
-      <div
-        style={styles.emoji}
-        onClick={() => speak(word.word)}
-      >
+      <div style={styles.emoji} onClick={() => speak(word.word)}>
         {word.emoji}
       </div>
 
-      {/* Word — tap to hear */}
-      <div
-        style={styles.word}
-        onClick={() => speak(word.word)}
-      >
+      <div style={styles.word} onClick={() => speak(word.word)}>
         {word.word}
       </div>
 
-      {/* Chinese translation */}
       <div style={styles.chinese}>{word.chinese}</div>
 
-      {/* Listen button */}
-      <button style={styles.listenBtn} onClick={() => speak(word.word)}>
-        🔊
-      </button>
+      {/* Action buttons row */}
+      <div style={styles.actions}>
+        <button style={styles.listenBtn} onClick={() => speak(word.word)}>
+          🔊
+        </button>
+        {word.videoId && onPlayVideo && (
+          <button
+            style={styles.videoBtn}
+            onClick={() => onPlayVideo(word.videoId!)}
+          >
+            ▶
+          </button>
+        )}
+      </div>
 
       {/* Nav arrows */}
       <div style={styles.nav}>
@@ -118,6 +119,11 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#636e72",
     fontWeight: 600,
   },
+  actions: {
+    display: "flex",
+    gap: "16px",
+    marginTop: "4px",
+  },
   listenBtn: {
     fontSize: "36px",
     width: "64px",
@@ -128,7 +134,19 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     boxShadow: "0 4px 16px rgba(108, 92, 231, 0.4)",
-    marginTop: "4px",
+  },
+  videoBtn: {
+    fontSize: "28px",
+    width: "64px",
+    height: "64px",
+    borderRadius: "50%",
+    background: "#e74c3c",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 4px 16px rgba(231, 76, 60, 0.4)",
+    fontWeight: 900,
   },
   nav: {
     display: "flex",

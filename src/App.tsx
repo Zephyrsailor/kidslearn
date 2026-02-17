@@ -5,8 +5,11 @@ import { SpeechInput } from "./components/SpeechInput";
 import { FeedbackBubble } from "./components/FeedbackBubble";
 import { CameraView } from "./components/CameraView";
 import { StarCounter } from "./components/StarCounter";
+import { VideoPlayer } from "./components/VideoPlayer";
+import { ParentDashboard } from "./components/ParentDashboard";
 import { useClaudeAI } from "./hooks/useClaudeAI";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis";
+import { useSoundEffects } from "./hooks/useSoundEffects";
 import { getStars, addStar, isMilestone } from "./store/progress";
 import confetti from "canvas-confetti";
 
@@ -37,9 +40,12 @@ function App() {
   const [category, setCategory] = useState("all");
   const [stars, setStars] = useState(getStars);
   const [showCamera, setShowCamera] = useState(false);
+  const [showVideo, setShowVideo] = useState<string | null>(null);
+  const [showParent, setShowParent] = useState(false);
   const [celebration, setCelebration] = useState(false);
   const { loading, feedback, evaluatePronunciation, clearFeedback } = useClaudeAI();
   const { speak } = useSpeechSynthesis();
+  const { playCorrect, playTryAgain } = useSoundEffects();
 
   const filteredWords =
     category === "all" ? words : words.filter((w) => w.category === category);
@@ -56,10 +62,8 @@ function App() {
     setCurrentIndex((i) => Math.max(i - 1, 0));
   }, [clearFeedback]);
 
-  // Fire big milestone celebration (every 5 stars)
   const fireMilestone = useCallback(() => {
     setCelebration(true);
-    // Multiple confetti bursts
     const end = Date.now() + 2000;
     const frame = () => {
       confetti({
@@ -82,6 +86,7 @@ function App() {
       speak(result.message, 0.85);
 
       if (result.isCorrect) {
+        playCorrect();
         const newStars = addStar(currentWord.word);
         setStars(newStars);
         if (isMilestone(newStars)) {
@@ -93,9 +98,11 @@ function App() {
             setCurrentIndex((i) => i + 1);
           }
         }, 3000);
+      } else {
+        playTryAgain();
       }
     },
-    [currentWord, evaluatePronunciation, speak, currentIndex, filteredWords.length, clearFeedback, fireMilestone]
+    [currentWord, evaluatePronunciation, speak, currentIndex, filteredWords.length, clearFeedback, fireMilestone, playCorrect, playTryAgain]
   );
 
   const handleCategoryChange = useCallback(
@@ -107,13 +114,11 @@ function App() {
     [clearFeedback]
   );
 
-  // Camera: identify object and navigate to matching word
   const handleCameraIdentify = useCallback(
     (identifiedWord: string) => {
       setShowCamera(false);
       clearFeedback();
 
-      // Try to find the word in the full word list
       const idx = words.findIndex(
         (w) => w.word.toLowerCase() === identifiedWord.toLowerCase()
       );
@@ -122,13 +127,15 @@ function App() {
         setCurrentIndex(idx);
         speak(words[idx].word);
       } else {
-        // Word not in our list -- show it anyway via feedback
         speak(identifiedWord);
-        // Stay on current word but show the identified word
       }
     },
     [clearFeedback, speak]
   );
+
+  const handlePlayVideo = useCallback((videoId: string) => {
+    setShowVideo(videoId);
+  }, []);
 
   if (!currentWord) {
     return (
@@ -142,13 +149,19 @@ function App() {
 
   return (
     <div style={{ ...styles.screen, background: bgGradients[category] || bgGradients.all }}>
-      {/* Top bar: stars + categories + progress */}
+      {/* Top bar */}
       <div style={styles.topBar}>
         <div style={styles.topRow}>
           <StarCounter stars={stars} />
           <div style={styles.progress}>
             {currentIndex + 1} / {filteredWords.length}
           </div>
+          <button
+            style={styles.parentBtn}
+            onClick={() => setShowParent(true)}
+          >
+            👨‍👩‍👧
+          </button>
         </div>
         <div style={styles.categories}>
           {categories.map((cat) => (
@@ -168,16 +181,17 @@ function App() {
         </div>
       </div>
 
-      {/* Main content: word card */}
+      {/* Word card */}
       <WordCard
         word={currentWord}
         onNext={handleNext}
         onPrev={handlePrev}
         hasPrev={currentIndex > 0}
         hasNext={currentIndex < filteredWords.length - 1}
+        onPlayVideo={handlePlayVideo}
       />
 
-      {/* Bottom area: feedback + mic + camera */}
+      {/* Bottom area */}
       <div style={styles.bottomArea}>
         {(feedback || loading) && (
           <FeedbackBubble
@@ -197,7 +211,7 @@ function App() {
         </div>
       </div>
 
-      {/* Camera overlay */}
+      {/* Overlays */}
       {showCamera && (
         <CameraView
           onIdentify={handleCameraIdentify}
@@ -205,7 +219,17 @@ function App() {
         />
       )}
 
-      {/* Milestone celebration overlay */}
+      {showVideo && (
+        <VideoPlayer
+          videoId={showVideo}
+          onClose={() => setShowVideo(null)}
+        />
+      )}
+
+      {showParent && (
+        <ParentDashboard onClose={() => setShowParent(false)} />
+      )}
+
       {celebration && (
         <div style={styles.celebrationOverlay}>
           <div style={styles.celebrationText}>
@@ -267,6 +291,17 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "16px",
     color: "rgba(45, 52, 54, 0.6)",
     fontWeight: 700,
+  },
+  parentBtn: {
+    fontSize: "22px",
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    background: "rgba(255,255,255,0.6)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backdropFilter: "blur(8px)",
   },
   bottomArea: {
     display: "flex",
