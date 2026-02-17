@@ -111,7 +111,7 @@ export function CameraView({ onIdentify, onClose }: CameraViewProps) {
         {analyzing && <div style={styles.status}>🔍 Looking...</div>}
         {result && !analyzing && (
           <div style={styles.resultBubble}>
-            I see: <strong>{result}</strong>
+            That's a <strong>{result}</strong>! Can you say it?
           </div>
         )}
 
