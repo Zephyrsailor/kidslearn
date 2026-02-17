@@ -47,6 +47,10 @@ Without an API key, the app uses simple local feedback. With a key, Claude provi
 - Claude API (claude-haiku-4-5) for AI feedback
 - No external image dependencies (emoji-based)
 
+## Install as App
+
+Open in Chrome/Safari on mobile, then tap "Add to Home Screen" for a full-screen app experience with offline caching.
+
 ## Browser Support
 
 Speech recognition works best in Chrome/Edge. Safari has partial support. Firefox does not support the Web Speech Recognition API.
