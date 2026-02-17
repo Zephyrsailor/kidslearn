@@ -3,8 +3,12 @@ import { words } from "./data/words";
 import { WordCard } from "./components/WordCard";
 import { SpeechInput } from "./components/SpeechInput";
 import { FeedbackBubble } from "./components/FeedbackBubble";
+import { CameraView } from "./components/CameraView";
+import { StarCounter } from "./components/StarCounter";
 import { useClaudeAI } from "./hooks/useClaudeAI";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis";
+import { getStars, addStar, isMilestone } from "./store/progress";
+import confetti from "canvas-confetti";
 
 const categories = [
   { id: "all", label: "🌈 All", color: "#6c5ce7" },
@@ -17,7 +21,6 @@ const categories = [
   { id: "objects", label: "🧸", color: "#a29bfe" },
 ];
 
-// Background gradients per category
 const bgGradients: Record<string, string> = {
   all: "linear-gradient(160deg, #c3b1e1 0%, #ffeaa7 40%, #fab1a0 100%)",
   animals: "linear-gradient(160deg, #ffecd2 0%, #fcb69f 100%)",
@@ -32,6 +35,9 @@ const bgGradients: Record<string, string> = {
 function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [category, setCategory] = useState("all");
+  const [stars, setStars] = useState(getStars);
+  const [showCamera, setShowCamera] = useState(false);
+  const [celebration, setCelebration] = useState(false);
   const { loading, feedback, evaluatePronunciation, clearFeedback } = useClaudeAI();
   const { speak } = useSpeechSynthesis();
 
@@ -50,12 +56,37 @@ function App() {
     setCurrentIndex((i) => Math.max(i - 1, 0));
   }, [clearFeedback]);
 
+  // Fire big milestone celebration (every 5 stars)
+  const fireMilestone = useCallback(() => {
+    setCelebration(true);
+    // Multiple confetti bursts
+    const end = Date.now() + 2000;
+    const frame = () => {
+      confetti({
+        particleCount: 30,
+        angle: 60 + Math.random() * 60,
+        spread: 60,
+        origin: { x: Math.random(), y: Math.random() * 0.6 },
+        colors: ["#6c5ce7", "#00b894", "#fdcb6e", "#e17055", "#74b9ff", "#fd79a8"],
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    };
+    frame();
+    setTimeout(() => setCelebration(false), 3000);
+  }, []);
+
   const handleSpeechResult = useCallback(
     async (transcript: string) => {
       if (!currentWord) return;
       const result = await evaluatePronunciation(currentWord.word, transcript);
       speak(result.message, 0.85);
+
       if (result.isCorrect) {
+        const newStars = addStar(currentWord.word);
+        setStars(newStars);
+        if (isMilestone(newStars)) {
+          fireMilestone();
+        }
         setTimeout(() => {
           if (currentIndex < filteredWords.length - 1) {
             clearFeedback();
@@ -64,7 +95,7 @@ function App() {
         }, 3000);
       }
     },
-    [currentWord, evaluatePronunciation, speak, currentIndex, filteredWords.length, clearFeedback]
+    [currentWord, evaluatePronunciation, speak, currentIndex, filteredWords.length, clearFeedback, fireMilestone]
   );
 
   const handleCategoryChange = useCallback(
@@ -74,6 +105,29 @@ function App() {
       clearFeedback();
     },
     [clearFeedback]
+  );
+
+  // Camera: identify object and navigate to matching word
+  const handleCameraIdentify = useCallback(
+    (identifiedWord: string) => {
+      setShowCamera(false);
+      clearFeedback();
+
+      // Try to find the word in the full word list
+      const idx = words.findIndex(
+        (w) => w.word.toLowerCase() === identifiedWord.toLowerCase()
+      );
+      if (idx >= 0) {
+        setCategory("all");
+        setCurrentIndex(idx);
+        speak(words[idx].word);
+      } else {
+        // Word not in our list -- show it anyway via feedback
+        speak(identifiedWord);
+        // Stay on current word but show the identified word
+      }
+    },
+    [clearFeedback, speak]
   );
 
   if (!currentWord) {
@@ -88,8 +142,14 @@ function App() {
 
   return (
     <div style={{ ...styles.screen, background: bgGradients[category] || bgGradients.all }}>
-      {/* Top bar: categories + progress */}
+      {/* Top bar: stars + categories + progress */}
       <div style={styles.topBar}>
+        <div style={styles.topRow}>
+          <StarCounter stars={stars} />
+          <div style={styles.progress}>
+            {currentIndex + 1} / {filteredWords.length}
+          </div>
+        </div>
         <div style={styles.categories}>
           {categories.map((cat) => (
             <button
@@ -106,12 +166,9 @@ function App() {
             </button>
           ))}
         </div>
-        <div style={styles.progress}>
-          {currentIndex + 1} / {filteredWords.length}
-        </div>
       </div>
 
-      {/* Main content: word card fills middle */}
+      {/* Main content: word card */}
       <WordCard
         word={currentWord}
         onNext={handleNext}
@@ -120,7 +177,7 @@ function App() {
         hasNext={currentIndex < filteredWords.length - 1}
       />
 
-      {/* Bottom area: feedback + mic */}
+      {/* Bottom area: feedback + mic + camera */}
       <div style={styles.bottomArea}>
         {(feedback || loading) && (
           <FeedbackBubble
@@ -129,8 +186,36 @@ function App() {
             loading={loading}
           />
         )}
-        <SpeechInput onResult={handleSpeechResult} disabled={loading} />
+        <div style={styles.bottomButtons}>
+          <SpeechInput onResult={handleSpeechResult} disabled={loading} />
+          <button
+            style={styles.cameraBtn}
+            onClick={() => setShowCamera(true)}
+          >
+            📷
+          </button>
+        </div>
       </div>
+
+      {/* Camera overlay */}
+      {showCamera && (
+        <CameraView
+          onIdentify={handleCameraIdentify}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+
+      {/* Milestone celebration overlay */}
+      {celebration && (
+        <div style={styles.celebrationOverlay}>
+          <div style={styles.celebrationText}>
+            🌟 {stars} Stars! 🌟
+          </div>
+          <div style={styles.celebrationSub}>
+            Amazing job today!
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -145,6 +230,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: "'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive, sans-serif",
     overflow: "hidden",
     transition: "background 0.4s ease",
+    position: "relative",
   },
   topBar: {
     display: "flex",
@@ -154,6 +240,14 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     flexShrink: 0,
     paddingTop: "8px",
+  },
+  topRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    maxWidth: "500px",
+    padding: "0 8px",
   },
   categories: {
     display: "flex",
@@ -181,6 +275,48 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "12px",
     flexShrink: 0,
     paddingBottom: "12px",
+  },
+  bottomButtons: {
+    display: "flex",
+    alignItems: "center",
+    gap: "20px",
+  },
+  cameraBtn: {
+    width: "64px",
+    height: "64px",
+    borderRadius: "50%",
+    background: "rgba(255,255,255,0.7)",
+    fontSize: "28px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backdropFilter: "blur(8px)",
+    boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+  },
+  celebrationOverlay: {
+    position: "fixed",
+    inset: 0,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(0,0,0,0.3)",
+    zIndex: 999,
+    animation: "bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    pointerEvents: "none",
+  },
+  celebrationText: {
+    fontSize: "min(15vw, 72px)",
+    fontWeight: 900,
+    color: "white",
+    textShadow: "3px 3px 8px rgba(0,0,0,0.3)",
+  },
+  celebrationSub: {
+    fontSize: "min(7vw, 32px)",
+    fontWeight: 700,
+    color: "white",
+    marginTop: "8px",
+    textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
   },
 };
 
