@@ -1,73 +1,52 @@
-# React + TypeScript + Vite
+# Kids Learn English
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An interactive English learning app for 3-year-old children. Built with React + TypeScript + Vite.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Word Cards**: 50 common English words with emoji, pronunciation, and Chinese translation
+- **Text-to-Speech**: Tap any word or emoji to hear it spoken aloud
+- **Speech Recognition**: Children speak into the microphone to practice pronunciation
+- **AI Feedback**: Claude AI provides encouraging, age-appropriate feedback (optional)
+- **Category Browsing**: Words organized into 7 categories (animals, food, colors, body parts, family, nature, objects)
+- **Child-Friendly UI**: Large fonts, bright colors, big touch targets, fun animations
 
-## React Compiler
+## Quick Start
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open http://localhost:5173 in Chrome (recommended for speech recognition support).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## With AI Feedback (Optional)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+VITE_ANTHROPIC_API_KEY=sk-ant-xxx npm run dev
 ```
+
+Without an API key, the app uses simple local feedback. With a key, Claude provides more natural, encouraging responses.
+
+## Word Categories
+
+| Category | Count | Examples |
+|----------|-------|---------|
+| Animals  | 10    | cat, dog, fish, bird, elephant |
+| Food     | 10    | apple, banana, milk, cake, cookie |
+| Colors   | 5     | red, blue, green, yellow, pink |
+| Body     | 7     | eye, nose, mouth, hand, foot |
+| Family   | 5     | mom, dad, baby, grandma, grandpa |
+| Nature   | 8     | sun, moon, star, tree, flower |
+| Objects  | 6     | ball, book, car, house, shoe |
+
+## Tech Stack
+
+- React + TypeScript + Vite
+- Web Speech API (STT + TTS)
+- Claude API (claude-haiku-4-5) for AI feedback
+- No external image dependencies (emoji-based)
+
+## Browser Support
+
+Speech recognition works best in Chrome/Edge. Safari has partial support. Firefox does not support the Web Speech Recognition API.
