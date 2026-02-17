@@ -1,5 +1,7 @@
 # Kids Learn English
 
+**[Live Demo](https://kidslearn.vercel.app)** | [GitHub](https://github.com/Zephyrsailor/kidslearn)
+
 An interactive English learning app for 3-year-old children. Built with React + TypeScript + Vite.
 
 ## Features
@@ -11,20 +13,23 @@ An interactive English learning app for 3-year-old children. Built with React + 
 - **Category Browsing**: Words organized into 7 categories (animals, food, colors, body parts, family, nature, objects)
 - **Child-Friendly UI**: Large fonts, bright colors, big touch targets, fun animations
 
-## Quick Start
+## Deploy
+
+### Vercel (recommended)
+
+1. Fork this repo
+2. Connect to Vercel
+3. Add environment variable: `VITE_ANTHROPIC_API_KEY=your_key`
+4. Deploy
+
+### Local
 
 ```bash
 npm install
-npm run dev
+VITE_ANTHROPIC_API_KEY=your_key npm run dev
 ```
 
 Open http://localhost:5173 in Chrome (recommended for speech recognition support).
-
-## With AI Feedback (Optional)
-
-```bash
-VITE_ANTHROPIC_API_KEY=sk-ant-xxx npm run dev
-```
 
 Without an API key, the app uses simple local feedback. With a key, Claude provides more natural, encouraging responses.
 
