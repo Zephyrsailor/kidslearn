@@ -227,7 +227,7 @@ function App() {
       )}
 
       {showParent && (
-        <ParentDashboard onClose={() => setShowParent(false)} />
+        <ParentDashboard onClose={() => setShowParent(false)} onReset={() => setStars(0)} />
       )}
 
       {celebration && (

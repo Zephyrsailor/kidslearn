@@ -1,13 +1,15 @@
-import { useRef, useEffect } from "react";
-import { getStars, getWordsCorrect, getStreak, getTotalWords } from "../store/progress";
+import { useRef, useEffect, useState } from "react";
+import { getStars, getWordsCorrect, getStreak, getTotalWords, clearToday } from "../store/progress";
 import { words as allWords } from "../data/words";
 
 interface ParentDashboardProps {
   onClose: () => void;
+  onReset?: () => void;
 }
 
-export function ParentDashboard({ onClose }: ParentDashboardProps) {
+export function ParentDashboard({ onClose, onReset }: ParentDashboardProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [cleared, setCleared] = useState(false);
 
   useEffect(() => {
     dialogRef.current?.showModal();
@@ -19,8 +21,14 @@ export function ParentDashboard({ onClose }: ParentDashboardProps) {
     }
   };
 
-  const stars = getStars();
-  const wordsCorrect = getWordsCorrect();
+  const handleClear = () => {
+    clearToday();
+    setCleared(true);
+    onReset?.();
+  };
+
+  const stars = cleared ? 0 : getStars();
+  const wordsCorrect = cleared ? [] : getWordsCorrect();
   const streak = getStreak();
   const totalWords = getTotalWords();
   const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -77,6 +85,18 @@ export function ParentDashboard({ onClose }: ParentDashboardProps) {
             </div>
           )}
         </div>
+
+        {/* Clear today */}
+        {!cleared && wordsCorrect.length > 0 && (
+          <button style={styles.clearBtn} onClick={handleClear}>
+            Clear Today's Record
+          </button>
+        )}
+        {cleared && (
+          <div style={{ ...styles.empty, textAlign: "center" as const, marginBottom: "8px" }}>
+            Today's record cleared.
+          </div>
+        )}
 
         {/* Last active */}
         <div style={styles.footer}>
@@ -189,6 +209,18 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "14px",
     color: "#b2bec3",
     fontStyle: "italic",
+  },
+  clearBtn: {
+    width: "100%",
+    padding: "10px",
+    borderRadius: "12px",
+    background: "#dfe6e9",
+    color: "#636e72",
+    fontSize: "14px",
+    fontWeight: 700,
+    cursor: "pointer",
+    border: "none",
+    marginBottom: "8px",
   },
   footer: {
     fontSize: "12px",

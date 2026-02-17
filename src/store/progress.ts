@@ -105,6 +105,11 @@ export function addStar(word: string): number {
   return data.stars;
 }
 
+/** Clear today's progress (stars + words). Lifetime history is preserved. */
+export function clearToday(): void {
+  saveProgress({ stars: 0, date: todayStr(), wordsCorrect: [] });
+}
+
 /** Check if a milestone was just reached (every 5 stars). */
 export function isMilestone(stars: number): boolean {
   return stars > 0 && stars % 5 === 0;
