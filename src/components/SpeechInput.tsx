@@ -19,51 +19,58 @@ export function SpeechInput({ onResult, disabled }: SpeechInputProps) {
   if (!supported) {
     return (
       <div style={styles.unsupported}>
-        🎤 Voice not supported in this browser. Try Chrome!
+        🎤 Please use Chrome for voice!
       </div>
     );
   }
+
+  const listening = isListening;
 
   return (
     <button
       style={{
         ...styles.micBtn,
-        background: isListening ? "#e17055" : "#00b894",
-        transform: isListening ? "scale(1.1)" : "scale(1)",
+        background: listening ? "#e74c3c" : "#e74c3c",
+        animation: listening ? "ripple 1.2s infinite, pulse 0.8s infinite" : "none",
+        opacity: disabled ? 0.5 : 1,
       }}
       onClick={startListening}
       disabled={disabled || isListening}
     >
-      {isListening ? (
-        <span style={styles.listening}>
-          🎤 Listening...
-        </span>
-      ) : (
-        <span>🎤 Your turn! Speak!</span>
-      )}
+      <span style={styles.micIcon}>🎤</span>
+      {listening && <span style={styles.micLabel}>Listening...</span>}
     </button>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
   micBtn: {
-    fontSize: "28px",
-    padding: "20px 40px",
-    borderRadius: "50px",
-    border: "none",
-    color: "white",
-    cursor: "pointer",
-    fontWeight: 700,
+    width: "96px",
+    height: "96px",
+    borderRadius: "50%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 6px 24px rgba(231, 76, 60, 0.5)",
     transition: "all 0.2s",
-    width: "min(90vw, 400px)",
+    position: "relative",
+    flexShrink: 0,
   },
-  listening: {
-    animation: "pulse 1s infinite",
+  micIcon: {
+    fontSize: "40px",
+    lineHeight: 1,
+  },
+  micLabel: {
+    fontSize: "11px",
+    color: "white",
+    fontWeight: 700,
+    marginTop: "2px",
   },
   unsupported: {
-    fontSize: "18px",
+    fontSize: "16px",
     color: "#d63031",
     textAlign: "center" as const,
-    padding: "16px",
+    padding: "12px",
   },
 };

@@ -7,15 +7,27 @@ import { useClaudeAI } from "./hooks/useClaudeAI";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis";
 
 const categories = [
-  { id: "all", label: "🌈 All" },
-  { id: "animals", label: "🐾 Animals" },
-  { id: "food", label: "🍎 Food" },
-  { id: "colors", label: "🎨 Colors" },
-  { id: "body", label: "🧍 Body" },
-  { id: "family", label: "👨‍👩‍👧 Family" },
-  { id: "nature", label: "🌿 Nature" },
-  { id: "objects", label: "🧸 Objects" },
+  { id: "all", label: "🌈 All", color: "#6c5ce7" },
+  { id: "animals", label: "🐾", color: "#e17055" },
+  { id: "food", label: "🍎", color: "#00b894" },
+  { id: "colors", label: "🎨", color: "#fdcb6e" },
+  { id: "body", label: "🧍", color: "#74b9ff" },
+  { id: "family", label: "👨‍👩‍👧", color: "#fd79a8" },
+  { id: "nature", label: "🌿", color: "#55efc4" },
+  { id: "objects", label: "🧸", color: "#a29bfe" },
 ];
+
+// Background gradients per category
+const bgGradients: Record<string, string> = {
+  all: "linear-gradient(160deg, #c3b1e1 0%, #ffeaa7 40%, #fab1a0 100%)",
+  animals: "linear-gradient(160deg, #ffecd2 0%, #fcb69f 100%)",
+  food: "linear-gradient(160deg, #a8edea 0%, #fed6e3 100%)",
+  colors: "linear-gradient(160deg, #ffeaa7 0%, #dfe6e9 50%, #fab1a0 100%)",
+  body: "linear-gradient(160deg, #a1c4fd 0%, #c2e9fb 100%)",
+  family: "linear-gradient(160deg, #fbc2eb 0%, #a6c1ee 100%)",
+  nature: "linear-gradient(160deg, #d4fc79 0%, #96e6a1 100%)",
+  objects: "linear-gradient(160deg, #a18cd1 0%, #fbc2eb 100%)",
+};
 
 function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -42,16 +54,14 @@ function App() {
     async (transcript: string) => {
       if (!currentWord) return;
       const result = await evaluatePronunciation(currentWord.word, transcript);
-      // Read the feedback aloud
       speak(result.message, 0.85);
-      // Auto-advance on correct after a delay
       if (result.isCorrect) {
         setTimeout(() => {
           if (currentIndex < filteredWords.length - 1) {
             clearFeedback();
             setCurrentIndex((i) => i + 1);
           }
-        }, 2500);
+        }, 3000);
       }
     },
     [currentWord, evaluatePronunciation, speak, currentIndex, filteredWords.length, clearFeedback]
@@ -67,36 +77,41 @@ function App() {
   );
 
   if (!currentWord) {
-    return <div style={styles.empty}>No words in this category yet!</div>;
+    return (
+      <div style={{ ...styles.screen, background: bgGradients.all }}>
+        <div style={{ fontSize: "32px", textAlign: "center" }}>
+          No words here yet!
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>🌟 Kids Learn English 🌟</h1>
-
-      {/* Category picker */}
-      <div style={styles.categories}>
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            style={{
-              ...styles.catBtn,
-              background: category === cat.id ? "#6c5ce7" : "#dfe6e9",
-              color: category === cat.id ? "white" : "#2d3436",
-            }}
-            onClick={() => handleCategoryChange(cat.id)}
-          >
-            {cat.label}
-          </button>
-        ))}
+    <div style={{ ...styles.screen, background: bgGradients[category] || bgGradients.all }}>
+      {/* Top bar: categories + progress */}
+      <div style={styles.topBar}>
+        <div style={styles.categories}>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              style={{
+                ...styles.catBtn,
+                background: category === cat.id ? cat.color : "rgba(255,255,255,0.5)",
+                color: category === cat.id ? "white" : "#2d3436",
+                boxShadow: category === cat.id ? `0 2px 12px ${cat.color}66` : "none",
+              }}
+              onClick={() => handleCategoryChange(cat.id)}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+        <div style={styles.progress}>
+          {currentIndex + 1} / {filteredWords.length}
+        </div>
       </div>
 
-      {/* Progress */}
-      <div style={styles.progress}>
-        {currentIndex + 1} / {filteredWords.length}
-      </div>
-
-      {/* Word Card */}
+      {/* Main content: word card fills middle */}
       <WordCard
         word={currentWord}
         onNext={handleNext}
@@ -105,77 +120,67 @@ function App() {
         hasNext={currentIndex < filteredWords.length - 1}
       />
 
-      {/* Speech Input */}
-      <SpeechInput onResult={handleSpeechResult} disabled={loading} />
-
-      {/* AI Feedback */}
-      {(feedback || loading) && (
-        <FeedbackBubble
-          message={feedback?.message || ""}
-          isCorrect={feedback?.isCorrect || false}
-          loading={loading}
-        />
-      )}
-
-      {/* Footer hint */}
-      <div style={styles.hint}>
-        Tap the emoji or word to hear it, then press the green button and say it!
+      {/* Bottom area: feedback + mic */}
+      <div style={styles.bottomArea}>
+        {(feedback || loading) && (
+          <FeedbackBubble
+            message={feedback?.message || ""}
+            isCorrect={feedback?.isCorrect || false}
+            loading={loading}
+          />
+        )}
+        <SpeechInput onResult={handleSpeechResult} disabled={loading} />
       </div>
     </div>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: {
+  screen: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: "20px",
-    padding: "24px 16px",
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #a29bfe 0%, #ffeaa7 50%, #fab1a0 100%)",
-    fontFamily: "'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif",
+    height: "100dvh",
+    padding: "env(safe-area-inset-top, 12px) 16px env(safe-area-inset-bottom, 12px)",
+    fontFamily: "'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive, sans-serif",
+    overflow: "hidden",
+    transition: "background 0.4s ease",
   },
-  title: {
-    fontSize: "36px",
-    color: "#2d3436",
-    textAlign: "center",
-    margin: 0,
-    textShadow: "2px 2px 0 rgba(255,255,255,0.5)",
+  topBar: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "6px",
+    width: "100%",
+    flexShrink: 0,
+    paddingTop: "8px",
   },
   categories: {
     display: "flex",
     flexWrap: "wrap",
-    gap: "8px",
+    gap: "6px",
     justifyContent: "center",
-    maxWidth: "500px",
   },
   catBtn: {
-    fontSize: "16px",
-    padding: "8px 16px",
+    fontSize: "18px",
+    padding: "6px 14px",
     borderRadius: "20px",
-    border: "none",
-    cursor: "pointer",
-    fontWeight: 600,
+    fontWeight: 700,
     transition: "all 0.2s",
+    backdropFilter: "blur(8px)",
   },
   progress: {
-    fontSize: "20px",
-    color: "#636e72",
-    fontWeight: 600,
-  },
-  hint: {
     fontSize: "16px",
-    color: "#636e72",
-    textAlign: "center",
-    maxWidth: "400px",
-    lineHeight: 1.5,
-    marginTop: "8px",
+    color: "rgba(45, 52, 54, 0.6)",
+    fontWeight: 700,
   },
-  empty: {
-    fontSize: "24px",
-    textAlign: "center",
-    padding: "40px",
+  bottomArea: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "12px",
+    flexShrink: 0,
+    paddingBottom: "12px",
   },
 };
 

@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import type { Word } from "../data/words";
 import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
 
@@ -11,33 +12,73 @@ interface WordCardProps {
 
 export function WordCard({ word, onNext, onPrev, hasPrev, hasNext }: WordCardProps) {
   const { speak } = useSpeechSynthesis();
+  const touchStartX = useRef(0);
+  const [animKey, setAnimKey] = useState(0);
+
+  // Swipe detection
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 60) {
+      if (dx < 0 && hasNext) {
+        setAnimKey((k) => k + 1);
+        onNext();
+      } else if (dx > 0 && hasPrev) {
+        setAnimKey((k) => k + 1);
+        onPrev();
+      }
+    }
+  };
 
   return (
-    <div style={styles.card}>
-      <div style={styles.emoji} onClick={() => speak(word.word)}>
+    <div
+      key={animKey}
+      style={styles.container}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Emoji — tap to hear */}
+      <div
+        style={styles.emoji}
+        onClick={() => speak(word.word)}
+      >
         {word.emoji}
       </div>
-      <div style={styles.word} onClick={() => speak(word.word)}>
+
+      {/* Word — tap to hear */}
+      <div
+        style={styles.word}
+        onClick={() => speak(word.word)}
+      >
         {word.word}
       </div>
+
+      {/* Chinese translation */}
       <div style={styles.chinese}>{word.chinese}</div>
-      <button style={styles.speakBtn} onClick={() => speak(word.word)}>
-        🔊 Listen
+
+      {/* Listen button */}
+      <button style={styles.listenBtn} onClick={() => speak(word.word)}>
+        🔊
       </button>
+
+      {/* Nav arrows */}
       <div style={styles.nav}>
         <button
-          style={{ ...styles.navBtn, opacity: hasPrev ? 1 : 0.3 }}
-          onClick={onPrev}
+          style={{ ...styles.navBtn, opacity: hasPrev ? 1 : 0.2 }}
+          onClick={() => { setAnimKey((k) => k + 1); onPrev(); }}
           disabled={!hasPrev}
         >
-          ⬅️
+          ◀
         </button>
         <button
-          style={{ ...styles.navBtn, opacity: hasNext ? 1 : 0.3 }}
-          onClick={onNext}
+          style={{ ...styles.navBtn, opacity: hasNext ? 1 : 0.2 }}
+          onClick={() => { setAnimKey((k) => k + 1); onNext(); }}
           disabled={!hasNext}
         >
-          ➡️
+          ▶
         </button>
       </div>
     </div>
@@ -45,60 +86,66 @@ export function WordCard({ word, onNext, onPrev, hasPrev, hasNext }: WordCardPro
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  card: {
+  container: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: "12px",
-    padding: "32px",
-    background: "white",
-    borderRadius: "32px",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
-    width: "min(90vw, 400px)",
-    animation: "fadeIn 0.3s ease",
+    justifyContent: "center",
+    gap: "4px",
+    flex: 1,
+    width: "100%",
+    animation: "bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    userSelect: "none",
   },
   emoji: {
-    fontSize: "120px",
+    fontSize: "min(30vw, 160px)",
     cursor: "pointer",
-    userSelect: "none",
-    transition: "transform 0.2s",
+    animation: "float 3s ease-in-out infinite",
+    lineHeight: 1.2,
   },
   word: {
-    fontSize: "80px",
-    fontWeight: 800,
+    fontSize: "min(20vw, 96px)",
+    fontWeight: 900,
     color: "#2d3436",
     cursor: "pointer",
-    userSelect: "none",
     textAlign: "center",
     lineHeight: 1.1,
+    letterSpacing: "-2px",
+    textShadow: "3px 3px 0 rgba(108, 92, 231, 0.15)",
   },
   chinese: {
-    fontSize: "28px",
+    fontSize: "min(7vw, 32px)",
     color: "#636e72",
-    marginTop: "-4px",
+    fontWeight: 600,
   },
-  speakBtn: {
-    fontSize: "24px",
-    padding: "12px 32px",
-    borderRadius: "50px",
-    border: "none",
+  listenBtn: {
+    fontSize: "36px",
+    width: "64px",
+    height: "64px",
+    borderRadius: "50%",
     background: "#6c5ce7",
-    color: "white",
-    cursor: "pointer",
-    fontWeight: 700,
-    marginTop: "8px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 4px 16px rgba(108, 92, 231, 0.4)",
+    marginTop: "4px",
   },
   nav: {
     display: "flex",
-    gap: "24px",
-    marginTop: "8px",
+    gap: "40px",
+    marginTop: "4px",
   },
   navBtn: {
-    fontSize: "40px",
-    padding: "8px 24px",
-    borderRadius: "20px",
-    border: "none",
-    background: "#dfe6e9",
-    cursor: "pointer",
+    fontSize: "28px",
+    width: "56px",
+    height: "56px",
+    borderRadius: "50%",
+    background: "rgba(255,255,255,0.6)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backdropFilter: "blur(8px)",
+    color: "#2d3436",
+    fontWeight: 700,
   },
 };
