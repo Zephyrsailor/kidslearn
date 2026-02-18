@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { words } from "./data/words";
 import { WordCard } from "./components/WordCard";
 import { SpeechInput } from "./components/SpeechInput";
@@ -9,6 +9,7 @@ import { VideoPlayer } from "./components/VideoPlayer";
 import { ParentDashboard } from "./components/ParentDashboard";
 import { useClaudeAI } from "./hooks/useClaudeAI";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis";
+import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 import { useSoundEffects } from "./hooks/useSoundEffects";
 import { getStars, addStar, isMilestone } from "./store/progress";
 import confetti from "canvas-confetti";
@@ -40,27 +41,55 @@ function App() {
   const [category, setCategory] = useState("all");
   const [stars, setStars] = useState(getStars);
   const [showCamera, setShowCamera] = useState(false);
-  const [showVideo, setShowVideo] = useState<string | null>(null);
+  const [showVideo, setShowVideo] = useState<{ id: string; word: string } | null>(null);
   const [showParent, setShowParent] = useState(false);
   const [celebration, setCelebration] = useState(false);
   const { loading, feedback, evaluatePronunciation, clearFeedback } = useClaudeAI();
   const { speak } = useSpeechSynthesis();
+  const { isListening, result, startListening } = useSpeechRecognition();
   const { playCorrect, playTryAgain } = useSoundEffects();
+  // Prevent double auto-listen triggers
+  const autoListenScheduled = useRef(false);
 
   const filteredWords =
     category === "all" ? words : words.filter((w) => w.category === category);
 
   const currentWord = filteredWords[currentIndex];
 
-  const handleNext = useCallback(() => {
+  // Auto-speak word when it changes, then auto-start mic
+  useEffect(() => {
+    if (!currentWord) return;
+    autoListenScheduled.current = false;
     clearFeedback();
+
+    // Short delay so navigation animation settles first
+    const t = setTimeout(() => {
+      speak(currentWord.word, 0.65, () => {
+        if (autoListenScheduled.current) return;
+        autoListenScheduled.current = true;
+        // Start listening ~700ms after TTS finishes
+        setTimeout(startListening, 700);
+      });
+    }, 350);
+
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentWord?.word]);
+
+  // Handle speech recognition result
+  useEffect(() => {
+    if (!result || !currentWord) return;
+    handleSpeechResult(result.transcript);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+
+  const handleNext = useCallback(() => {
     setCurrentIndex((i) => Math.min(i + 1, filteredWords.length - 1));
-  }, [filteredWords.length, clearFeedback]);
+  }, [filteredWords.length]);
 
   const handlePrev = useCallback(() => {
-    clearFeedback();
     setCurrentIndex((i) => Math.max(i - 1, 0));
-  }, [clearFeedback]);
+  }, []);
 
   const fireMilestone = useCallback(() => {
     setCelebration(true);
@@ -93,25 +122,26 @@ function App() {
           fireMilestone();
         }
         setTimeout(() => {
-          if (currentIndex < filteredWords.length - 1) {
-            clearFeedback();
-            setCurrentIndex((i) => i + 1);
-          }
+          setCurrentIndex((i) => Math.min(i + 1, filteredWords.length - 1));
         }, 3000);
       } else {
         playTryAgain();
+        // Re-enable auto-listen after "try again" feedback is spoken
+        setTimeout(() => {
+          autoListenScheduled.current = false;
+        }, 2500);
       }
     },
-    [currentWord, evaluatePronunciation, speak, currentIndex, filteredWords.length, clearFeedback, fireMilestone, playCorrect, playTryAgain]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentWord, filteredWords.length]
   );
 
   const handleCategoryChange = useCallback(
     (cat: string) => {
       setCategory(cat);
       setCurrentIndex(0);
-      clearFeedback();
     },
-    [clearFeedback]
+    []
   );
 
   const handleCameraIdentify = useCallback(
@@ -133,10 +163,6 @@ function App() {
     [clearFeedback, speak]
   );
 
-  const handlePlayVideo = useCallback((videoId: string) => {
-    setShowVideo(videoId);
-  }, []);
-
   if (!currentWord) {
     return (
       <div style={{ ...styles.screen, background: bgGradients.all }}>
@@ -156,10 +182,7 @@ function App() {
           <div style={styles.progress}>
             {currentIndex + 1} / {filteredWords.length}
           </div>
-          <button
-            style={styles.parentBtn}
-            onClick={() => setShowParent(true)}
-          >
+          <button style={styles.parentBtn} onClick={() => setShowParent(true)}>
             👨‍👩‍👧
           </button>
         </div>
@@ -188,7 +211,7 @@ function App() {
         onPrev={handlePrev}
         hasPrev={currentIndex > 0}
         hasNext={currentIndex < filteredWords.length - 1}
-        onPlayVideo={handlePlayVideo}
+        onPlayVideo={(id, wordStr) => setShowVideo({ id, word: wordStr })}
       />
 
       {/* Bottom area */}
@@ -201,11 +224,12 @@ function App() {
           />
         )}
         <div style={styles.bottomButtons}>
-          <SpeechInput onResult={handleSpeechResult} disabled={loading} />
-          <button
-            style={styles.cameraBtn}
-            onClick={() => setShowCamera(true)}
-          >
+          <SpeechInput
+            isListening={isListening}
+            onStartListening={startListening}
+            disabled={loading}
+          />
+          <button style={styles.cameraBtn} onClick={() => setShowCamera(true)}>
             📷
           </button>
         </div>
@@ -221,7 +245,8 @@ function App() {
 
       {showVideo && (
         <VideoPlayer
-          videoId={showVideo}
+          videoId={showVideo.id}
+          word={showVideo.word}
           onClose={() => setShowVideo(null)}
         />
       )}
@@ -232,12 +257,8 @@ function App() {
 
       {celebration && (
         <div style={styles.celebrationOverlay}>
-          <div style={styles.celebrationText}>
-            🌟 {stars} Stars! 🌟
-          </div>
-          <div style={styles.celebrationSub}>
-            Amazing job today!
-          </div>
+          <div style={styles.celebrationText}>🌟 {stars} Stars! 🌟</div>
+          <div style={styles.celebrationSub}>Amazing job today!</div>
         </div>
       )}
     </div>

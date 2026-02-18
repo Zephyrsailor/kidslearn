@@ -3,7 +3,7 @@ import { useCallback, useRef } from "react";
 export function useSpeechSynthesis() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  const speak = useCallback((text: string, rate = 0.7) => {
+  const speak = useCallback((text: string, rate = 0.7, onEnd?: () => void) => {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
@@ -17,6 +17,8 @@ export function useSpeechSynthesis() {
       (v) => v.name.includes("Samantha") || v.name.includes("Google US English")
     );
     if (preferred) utterance.voice = preferred;
+
+    if (onEnd) utterance.onend = onEnd;
 
     utteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);

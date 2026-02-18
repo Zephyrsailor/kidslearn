@@ -8,7 +8,7 @@ interface WordCardProps {
   onPrev: () => void;
   hasPrev: boolean;
   hasNext: boolean;
-  onPlayVideo?: (videoId: string) => void;
+  onPlayVideo?: (videoId: string, word: string) => void;
 }
 
 export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, onPlayVideo }: WordCardProps) {
@@ -58,7 +58,7 @@ export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, onPlayVideo }
         {word.videoId && onPlayVideo && (
           <button
             style={styles.videoBtn}
-            onClick={() => onPlayVideo(word.videoId!)}
+            onClick={() => onPlayVideo(word.videoId!, word.word)}
           >
             ▶
           </button>
