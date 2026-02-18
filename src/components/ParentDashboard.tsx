@@ -5,10 +5,9 @@ import { words as allWords } from "../data/words";
 interface ParentDashboardProps {
   onClose: () => void;
   onReset?: () => void;
-  onOpenCamera?: () => void;
 }
 
-export function ParentDashboard({ onClose, onReset, onOpenCamera }: ParentDashboardProps) {
+export function ParentDashboard({ onClose, onReset }: ParentDashboardProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [cleared, setCleared] = useState(false);
 
@@ -97,14 +96,6 @@ export function ParentDashboard({ onClose, onReset, onOpenCamera }: ParentDashbo
           <div style={{ ...styles.empty, textAlign: "center" as const, marginBottom: "8px" }}>
             Today's record cleared.
           </div>
-        )}
-
-        {/* Camera (AI word recognition) */}
-        {onOpenCamera && (
-          <button style={styles.cameraBtn} onClick={onOpenCamera}>
-            📷 Identify Object with Camera
-            <div style={styles.cameraSub}>Point camera at a real object to find its word</div>
-          </button>
         )}
 
         {/* Last active */}
@@ -230,25 +221,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     border: "none",
     marginBottom: "8px",
-  },
-  cameraBtn: {
-    width: "100%",
-    padding: "12px",
-    borderRadius: "12px",
-    background: "#6c5ce7",
-    color: "white",
-    fontSize: "15px",
-    fontWeight: 700,
-    cursor: "pointer",
-    border: "none",
-    marginBottom: "8px",
-    textAlign: "left" as const,
-  },
-  cameraSub: {
-    fontSize: "11px",
-    fontWeight: 400,
-    color: "rgba(255,255,255,0.75)",
-    marginTop: "2px",
   },
   footer: {
     fontSize: "12px",

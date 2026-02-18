@@ -10,11 +10,10 @@ interface WordCardProps {
   onPrev: () => void;
   hasPrev: boolean;
   hasNext: boolean;
-  onOpenVideo?: () => void;
   phase?: Phase;
 }
 
-export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, onOpenVideo, phase }: WordCardProps) {
+export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, phase }: WordCardProps) {
   const { speak } = useSpeechSynthesis();
   const touchStartX = useRef(0);
   const [animKey, setAnimKey] = useState(0);
@@ -71,9 +70,23 @@ export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, onOpenVideo, 
 
       <div style={styles.chinese}>{word.chinese}</div>
 
-      {/* Action row */}
+      {/* Difficulty dots — only for word cards (not ABC) */}
+      {word.category !== "abc" && (
+        <div style={styles.dots}>
+          {[1, 2, 3].map((d) => (
+            <span
+              key={d}
+              style={{
+                ...styles.dot,
+                background: d <= word.difficulty ? "#6c5ce7" : "rgba(108,92,231,0.2)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Replay button */}
       <div style={styles.actions}>
-        {/* Replay word */}
         <button
           style={{
             ...styles.listenBtn,
@@ -84,13 +97,6 @@ export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, onOpenVideo, 
         >
           🔊
         </button>
-
-        {/* Bilibili video search */}
-        {word.videoId && onOpenVideo && (
-          <button style={styles.videoBtn} onClick={onOpenVideo} title="Watch on Bilibili">
-            📺
-          </button>
-        )}
       </div>
 
       {/* Nav arrows */}
@@ -146,6 +152,18 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#636e72",
     fontWeight: 600,
   },
+  dots: {
+    display: "flex",
+    gap: "8px",
+    marginTop: "2px",
+    marginBottom: "4px",
+  },
+  dot: {
+    width: "12px",
+    height: "12px",
+    borderRadius: "50%",
+    display: "inline-block",
+  },
   actions: {
     display: "flex",
     gap: "16px",
@@ -161,19 +179,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     boxShadow: "0 4px 16px rgba(108, 92, 231, 0.4)",
-  },
-  videoBtn: {
-    fontSize: "28px",
-    width: "60px",
-    height: "60px",
-    borderRadius: "50%",
-    background: "#00b2ff",
-    color: "white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 4px 16px rgba(0,178,255,0.4)",
-    fontWeight: 900,
   },
   nav: {
     display: "flex",

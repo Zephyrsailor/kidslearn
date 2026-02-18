@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { words } from "./data/words";
+import { alphabet } from "./data/alphabet";
 import { WordCard } from "./components/WordCard";
 import { ListeningBanner } from "./components/ListeningBanner";
 import { FeedbackBubble } from "./components/FeedbackBubble";
-import { CameraView } from "./components/CameraView";
 import { StarCounter } from "./components/StarCounter";
 import { ParentDashboard } from "./components/ParentDashboard";
 import { useClaudeAI } from "./hooks/useClaudeAI";
@@ -19,6 +19,7 @@ const LISTEN_TIMEOUT = 7; // seconds — wait for child to speak
 const MAX_RETRIES = 3;    // auto-advance after N missed turns
 
 const categories = [
+  { id: "abc",     label: "🔤 ABC",  color: "#e84393" },
   { id: "all",     label: "🌈 All",  color: "#6c5ce7" },
   { id: "animals", label: "🐾",      color: "#e17055" },
   { id: "food",    label: "🍎",      color: "#00b894" },
@@ -30,6 +31,7 @@ const categories = [
 ];
 
 const bgGradients: Record<string, string> = {
+  abc:     "linear-gradient(160deg, #ffecd2 0%, #ffd3e8 100%)",
   all:     "linear-gradient(160deg, #c3b1e1 0%, #ffeaa7 40%, #fab1a0 100%)",
   animals: "linear-gradient(160deg, #ffecd2 0%, #fcb69f 100%)",
   food:    "linear-gradient(160deg, #a8edea 0%, #fed6e3 100%)",
@@ -44,7 +46,6 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [category, setCategory] = useState("all");
   const [stars, setStars] = useState(getStars);
-  const [showCamera, setShowCamera] = useState(false);
   const [showParent, setShowParent] = useState(false);
   const [celebration, setCelebration] = useState(false);
   const [phase, setPhase] = useState<Phase>("showing");
@@ -52,10 +53,16 @@ function App() {
 
   const { loading, feedback, evaluatePronunciation, clearFeedback } = useClaudeAI();
   const { speak } = useSpeechSynthesis();
-  const { isListening, result, startListening } = useSpeechRecognition();
+  const { result, startListening } = useSpeechRecognition();
   const { playCorrect, playTryAgain } = useSoundEffects();
 
-  const filteredWords = category === "all" ? words : words.filter((w) => w.category === category);
+  // "abc" = just letters; "all" = ABC first, then words sorted by difficulty; else filter by category
+  const filteredWords =
+    category === "abc"
+      ? alphabet
+      : category === "all"
+      ? [...alphabet, ...[...words].sort((a, b) => a.difficulty - b.difficulty)]
+      : words.filter((w) => w.category === category);
   const currentWord = filteredWords[currentIndex];
 
   // ── Refs for stale-closure-safe callbacks ──────────────────────
@@ -206,21 +213,6 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCameraIdentify = useCallback((identifiedWord: string) => {
-    setShowCamera(false);
-    clearFeedbackRef.current();
-    const idx = words.findIndex((w) => w.word.toLowerCase() === identifiedWord.toLowerCase());
-    if (idx >= 0) { setCategory("all"); setCurrentIndex(idx); }
-    else speakRef.current(identifiedWord);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleOpenVideo = useCallback((word: string) => {
-    window.open(
-      `https://search.bilibili.com/all?keyword=${encodeURIComponent(word + " 儿歌英语")}`,
-      "_blank"
-    );
-  }, []);
 
   if (!currentWord) {
     return (
@@ -264,7 +256,6 @@ function App() {
         onPrev={() => handleNav(-1)}
         hasPrev={currentIndex > 0}
         hasNext={currentIndex < filteredWords.length - 1}
-        onOpenVideo={() => handleOpenVideo(currentWord.word)}
         phase={phase}
       />
 
@@ -290,14 +281,10 @@ function App() {
       )}
 
       {/* Overlays */}
-      {showCamera && (
-        <CameraView onIdentify={handleCameraIdentify} onClose={() => setShowCamera(false)} />
-      )}
       {showParent && (
         <ParentDashboard
           onClose={() => setShowParent(false)}
           onReset={() => setStars(0)}
-          onOpenCamera={() => { setShowParent(false); setShowCamera(true); }}
         />
       )}
       {celebration && (

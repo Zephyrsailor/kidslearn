@@ -1,0 +1,31 @@
+import type { Word } from "./words";
+
+// ABC phonics — letter name pronunciation (e.g., child says "ay" for A)
+export const alphabet: Word[] = [
+  { word: "A", emoji: "🍎", category: "abc", difficulty: 1, chinese: "A — Apple (苹果)" },
+  { word: "B", emoji: "🐝", category: "abc", difficulty: 1, chinese: "B — Bee (蜜蜂)" },
+  { word: "C", emoji: "🐱", category: "abc", difficulty: 1, chinese: "C — Cat (猫)" },
+  { word: "D", emoji: "🐶", category: "abc", difficulty: 1, chinese: "D — Dog (狗)" },
+  { word: "E", emoji: "🥚", category: "abc", difficulty: 1, chinese: "E — Egg (鸡蛋)" },
+  { word: "F", emoji: "🐟", category: "abc", difficulty: 1, chinese: "F — Fish (鱼)" },
+  { word: "G", emoji: "🍇", category: "abc", difficulty: 1, chinese: "G — Grape (葡萄)" },
+  { word: "H", emoji: "🏠", category: "abc", difficulty: 1, chinese: "H — House (房子)" },
+  { word: "I", emoji: "🍦", category: "abc", difficulty: 1, chinese: "I — Ice cream (冰淇淋)" },
+  { word: "J", emoji: "🤹", category: "abc", difficulty: 1, chinese: "J — Juggle (杂耍)" },
+  { word: "K", emoji: "🪁", category: "abc", difficulty: 1, chinese: "K — Kite (风筝)" },
+  { word: "L", emoji: "🦁", category: "abc", difficulty: 1, chinese: "L — Lion (狮子)" },
+  { word: "M", emoji: "🌙", category: "abc", difficulty: 1, chinese: "M — Moon (月亮)" },
+  { word: "N", emoji: "🌙", category: "abc", difficulty: 1, chinese: "N — Night (夜晚)" },
+  { word: "O", emoji: "🍊", category: "abc", difficulty: 1, chinese: "O — Orange (橙子)" },
+  { word: "P", emoji: "🐷", category: "abc", difficulty: 1, chinese: "P — Pig (猪)" },
+  { word: "Q", emoji: "👑", category: "abc", difficulty: 1, chinese: "Q — Queen (女王)" },
+  { word: "R", emoji: "🌈", category: "abc", difficulty: 1, chinese: "R — Rainbow (彩虹)" },
+  { word: "S", emoji: "☀️", category: "abc", difficulty: 1, chinese: "S — Sun (太阳)" },
+  { word: "T", emoji: "🐯", category: "abc", difficulty: 1, chinese: "T — Tiger (老虎)" },
+  { word: "U", emoji: "☂️", category: "abc", difficulty: 1, chinese: "U — Umbrella (雨伞)" },
+  { word: "V", emoji: "🌸", category: "abc", difficulty: 1, chinese: "V — Violet (紫罗兰)" },
+  { word: "W", emoji: "🌊", category: "abc", difficulty: 1, chinese: "W — Wave (浪)" },
+  { word: "X", emoji: "🎸", category: "abc", difficulty: 1, chinese: "X — Xylophone (木琴)" },
+  { word: "Y", emoji: "🟡", category: "abc", difficulty: 1, chinese: "Y — Yellow (黄色)" },
+  { word: "Z", emoji: "🦓", category: "abc", difficulty: 1, chinese: "Z — Zebra (斑马)" },
+];
