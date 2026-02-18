@@ -18,7 +18,20 @@ export function useSpeechSynthesis() {
     );
     if (preferred) utterance.voice = preferred;
 
-    if (onEnd) utterance.onend = onEnd;
+    if (onEnd) {
+      let fired = false;
+      const safeEnd = () => { if (!fired) { fired = true; onEnd(); } };
+      utterance.onend = safeEnd;
+      // onerror: only trigger for real errors, NOT for cancel/interrupted
+      utterance.onerror = (e: Event & { error?: string }) => {
+        const err = e.error ?? "";
+        if (err === "interrupted" || err === "canceled") return; // caused by cancel(), ignore
+        safeEnd();
+      };
+      // Fallback: fire after estimated speech duration (handles silent/headless browsers)
+      const estimatedMs = Math.max(2000, text.length * 150);
+      setTimeout(safeEnd, estimatedMs);
+    }
 
     utteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);

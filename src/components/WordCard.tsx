@@ -2,19 +2,25 @@ import { useRef, useState } from "react";
 import type { Word } from "../data/words";
 import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
 
+type Phase = "showing" | "speaking" | "listening" | "evaluating" | "feedback";
+
 interface WordCardProps {
   word: Word;
   onNext: () => void;
   onPrev: () => void;
   hasPrev: boolean;
   hasNext: boolean;
-  onPlayVideo?: (videoId: string, word: string) => void;
+  onOpenVideo?: () => void;
+  phase?: Phase;
 }
 
-export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, onPlayVideo }: WordCardProps) {
+export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, onOpenVideo, phase }: WordCardProps) {
   const { speak } = useSpeechSynthesis();
   const touchStartX = useRef(0);
   const [animKey, setAnimKey] = useState(0);
+
+  const isSpeaking = phase === "speaking";
+  const isListening = phase === "listening";
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -23,13 +29,8 @@ export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, onPlayVideo }
   const handleTouchEnd = (e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 60) {
-      if (dx < 0 && hasNext) {
-        setAnimKey((k) => k + 1);
-        onNext();
-      } else if (dx > 0 && hasPrev) {
-        setAnimKey((k) => k + 1);
-        onPrev();
-      }
+      if (dx < 0 && hasNext) { setAnimKey((k) => k + 1); onNext(); }
+      else if (dx > 0 && hasPrev) { setAnimKey((k) => k + 1); onPrev(); }
     }
   };
 
@@ -40,27 +41,54 @@ export function WordCard({ word, onNext, onPrev, hasPrev, hasNext, onPlayVideo }
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      <div style={styles.emoji} onClick={() => speak(word.word)}>
+      {/* Emoji — pulses when app is speaking */}
+      <div
+        style={{
+          ...styles.emoji,
+          animation: isSpeaking
+            ? "pulse 0.6s ease-in-out infinite"
+            : "float 3s ease-in-out infinite",
+        }}
+        onClick={() => speak(word.word, 0.6)}
+      >
         {word.emoji}
       </div>
 
-      <div style={styles.word} onClick={() => speak(word.word)}>
+      {/* Word text — shakes when listening to prompt child */}
+      <div
+        style={{
+          ...styles.word,
+          animation: isListening ? "shakeWord 0.5s ease 1" : "none",
+          color: isSpeaking ? "#6c5ce7" : "#2d3436",
+          textShadow: isSpeaking
+            ? "3px 3px 0 rgba(108,92,231,0.3)"
+            : "3px 3px 0 rgba(108,92,231,0.15)",
+        }}
+        onClick={() => speak(word.word, 0.6)}
+      >
         {word.word}
       </div>
 
       <div style={styles.chinese}>{word.chinese}</div>
 
-      {/* Action buttons row */}
+      {/* Action row */}
       <div style={styles.actions}>
-        <button style={styles.listenBtn} onClick={() => speak(word.word)}>
+        {/* Replay word */}
+        <button
+          style={{
+            ...styles.listenBtn,
+            animation: isSpeaking ? "pulse 0.6s ease-in-out infinite" : "none",
+          }}
+          onClick={() => speak(word.word, 0.6)}
+          title="Hear the word"
+        >
           🔊
         </button>
-        {word.videoId && onPlayVideo && (
-          <button
-            style={styles.videoBtn}
-            onClick={() => onPlayVideo(word.videoId!, word.word)}
-          >
-            ▶
+
+        {/* Bilibili video search */}
+        {word.videoId && onOpenVideo && (
+          <button style={styles.videoBtn} onClick={onOpenVideo} title="Watch on Bilibili">
+            📺
           </button>
         )}
       </div>
@@ -97,37 +125,36 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     animation: "bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
     userSelect: "none",
+    paddingBottom: "8px",
   },
   emoji: {
-    fontSize: "min(30vw, 160px)",
+    fontSize: "min(30vw, 150px)",
     cursor: "pointer",
-    animation: "float 3s ease-in-out infinite",
     lineHeight: 1.2,
   },
   word: {
-    fontSize: "min(20vw, 96px)",
+    fontSize: "min(20vw, 88px)",
     fontWeight: 900,
-    color: "#2d3436",
     cursor: "pointer",
     textAlign: "center",
     lineHeight: 1.1,
     letterSpacing: "-2px",
-    textShadow: "3px 3px 0 rgba(108, 92, 231, 0.15)",
+    transition: "color 0.3s",
   },
   chinese: {
-    fontSize: "min(7vw, 32px)",
+    fontSize: "min(7vw, 30px)",
     color: "#636e72",
     fontWeight: 600,
   },
   actions: {
     display: "flex",
     gap: "16px",
-    marginTop: "4px",
+    marginTop: "8px",
   },
   listenBtn: {
-    fontSize: "36px",
-    width: "64px",
-    height: "64px",
+    fontSize: "32px",
+    width: "60px",
+    height: "60px",
     borderRadius: "50%",
     background: "#6c5ce7",
     display: "flex",
@@ -137,15 +164,15 @@ const styles: Record<string, React.CSSProperties> = {
   },
   videoBtn: {
     fontSize: "28px",
-    width: "64px",
-    height: "64px",
+    width: "60px",
+    height: "60px",
     borderRadius: "50%",
-    background: "#e74c3c",
+    background: "#00b2ff",
     color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 4px 16px rgba(231, 76, 60, 0.4)",
+    boxShadow: "0 4px 16px rgba(0,178,255,0.4)",
     fontWeight: 900,
   },
   nav: {
